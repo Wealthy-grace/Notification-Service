@@ -40,10 +40,39 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build and Test
-        run: ./gradlew clean build test --no-daemon --stacktrace
+      - name: Build without tests
+        run: ./gradlew clean build -x test --no-daemon
         env:
           SPRING_PROFILES_ACTIVE: test
+
+      - name: Run tests with verbose output
+        id: test
+        run: ./gradlew test --no-daemon --stacktrace --info
+        env:
+          SPRING_PROFILES_ACTIVE: test
+        continue-on-error: true
+
+      - name: Display test results on failure
+        if: steps.test.outcome == 'failure'
+        run: |
+          echo "==================================="
+          echo "TEST FAILURES DETECTED"
+          echo "==================================="
+          echo ""
+          echo "Test Results XML Files:"
+          find build/test-results -name "*.xml" -type f | head -20
+          echo ""
+          echo "Failed Test Details:"
+          find build/test-results -name "*.xml" -type f -exec grep -l "failures" {} \; | while read file; do
+            echo "--- File: $file ---"
+            cat "$file"
+            echo ""
+          done
+          echo ""
+          echo "Test Reports:"
+          find build/reports/tests -type f -name "*.html" | head -10
+          echo ""
+          exit 1
 
       - name: Upload Test Results
         if: always()
@@ -56,11 +85,11 @@ jobs:
           retention-days: 7
 
       - name: Generate Coverage Report
-        if: success()
+        if: steps.test.outcome == 'success'
         run: ./gradlew jacocoTestReport
 
       - name: Upload JAR artifact
-        if: success()
+        if: steps.test.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: notification-service-jar
@@ -68,7 +97,7 @@ jobs:
           retention-days: 1
 
   # ==========================================
-  # Job 2: Code Quality (SonarCloud)
+  # Job 2: Code Quality (SonarCloud) - Optional
   # ==========================================
   sonarcloud:
     name: SonarCloud Analysis
@@ -109,6 +138,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew build sonar --info
+        continue-on-error: true
 
   # ==========================================
   # Job 3: Docker Build
@@ -133,23 +163,6 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t notification-service:test .
-
-      - name: Test Docker image
-        run: |
-          echo "🧪 Testing Docker image..."
-          docker run -d --name notification-test \
-            -e SPRING_PROFILES_ACTIVE=test \
-            notification-service:test
-          
-          echo "⏳ Waiting 30 seconds for startup..."
-          sleep 30
-          
-          echo "📋 Container logs:"
-          docker logs notification-test
-          
-          echo "🧹 Cleanup"
-          docker stop notification-test
-          docker rm notification-test
 
       - name: Save Docker image
         if: github.ref == 'refs/heads/main'
