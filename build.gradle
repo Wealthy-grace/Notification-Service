@@ -38,6 +38,16 @@ jacoco {
 test {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
+
+    // Show test output in console
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showExceptions true
+        showCauses true
+        showStackTraces true
+        showStandardStreams = false
+    }
 }
 
 jacocoTestReport {
@@ -100,8 +110,11 @@ dependencies {
     // RabbitMQ
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
-    // MySQL Database
+    // MySQL Database (Production)
     runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // H2 Database (Testing Only) - ADDED FOR TEST FIX
+    testRuntimeOnly 'com.h2database:h2'
 
     // REST Client (Spring 6.1+)
     implementation 'org.springframework.boot:spring-boot-starter-webflux'

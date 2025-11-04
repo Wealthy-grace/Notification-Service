@@ -1,85 +1,102 @@
-# Place this file in: src/test/resources/application-test.yml
+# Place this file in: src/test/resources/application-test.properties
+# This overrides the MySQL config ONLY for tests
 
-spring:
-  # Use H2 in-memory database for tests
-  datasource:
-    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.postgresql.Driver
-    username: sa
-    password:
-
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: false
-        use_sql_comments: false
-
-  # RabbitMQ - will be mocked in unit tests
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    # Disable auto-configuration if using mocks
-    # listener:
-    #   simple:
-    #     auto-startup: false
-
-  # Mail configuration - will be mocked in unit tests
-  mail:
-    host: localhost
-    port: 1025
-    username:
-    password:
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
-            required: false
-
-  # Disable async for tests to make them deterministic
-  task:
-    execution:
-      pool:
-        core-size: 1
-        max-size: 1
-    scheduling:
-      pool:
-        size: 1
-
-# Logging
-logging:
-  level:
-    root: INFO
-    com.yourpackage: DEBUG
-    org.springframework.amqp: WARN
-    org.springframework.mail: WARN
-    org.hibernate: WARN
-    org.testcontainers: WARN
-
-# Actuator for health checks
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
-
-# Testcontainers
-testcontainers:
-  reuse:
-    enable: false
-
-# Disable unnecessary features in tests
-spring.autoconfigure.exclude:
-# Uncomment these if you want to disable auto-config in tests
-# - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
-# - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
+spring.application.name=Notification-Service
+  
+  # ===============================
+  # H2 In-Memory Database for Tests
+  # ===============================
+spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+  
+  # ===============================
+  # JPA / Hibernate Configuration for Tests
+  # ===============================
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+spring.jpa.properties.hibernate.format_sql=false
+spring.jpa.open-in-view=false
+  
+  # ===============================
+  # Mailpit Configuration (Mock)
+  # ===============================
+spring.mail.host=localhost
+spring.mail.port=1025
+spring.mail.username=
+spring.mail.password=
+spring.mail.properties.mail.smtp.auth=false
+spring.mail.properties.mail.smtp.starttls.enable=false
+  
+  # ===============================
+  # RabbitMQ Configuration (Mock)
+  # ===============================
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+  
+  # RabbitMQ Queue Names (same as prod)
+rabbitmq.queue.notification=notification.queue
+rabbitmq.queue.email=email.queue
+rabbitmq.queue.property-notification=property-notification.queue
+rabbitmq.queue.dlq=notification.dlq
+  
+  # RabbitMQ Exchange Names
+rabbitmq.exchange.notification=notification.exchange
+rabbitmq.exchange.dlx=notification.dlx
+  
+  # RabbitMQ Routing Keys
+rabbitmq.routing-key.notification=notification.routing.key
+rabbitmq.routing-key.email=email.routing.key
+rabbitmq.routing-key.property-notification=property-notification.routing.key
+rabbitmq.routing-key.dlq=dlq.routing.key
+  
+  # ===============================
+  # Disable OAuth2 for Tests
+  # ===============================
+spring.security.oauth2.resourceserver.jwt.issuer-uri=
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=
+  
+  # ===============================
+  # Server Configuration
+  # ===============================
+server.port=0
+  
+  # ===============================
+  # Email Configuration
+  # ===============================
+app.email.from=test@test.com
+app.email.from-name=Test Service
+app.email.enabled=true
+  
+  # ===============================
+  # REST Client Services URLs (Mock)
+  # ===============================
+app.services.property-service.url=http://localhost:8082
+app.services.user-service.url=http://localhost:8081
+  
+  # ===============================
+  # Actuator Configuration
+  # ===============================
+management.endpoints.web.exposure.include=health,info
+management.endpoint.health.show-details=always
+  
+  # ===============================
+  # Logging Configuration (Less Verbose)
+  # ===============================
+logging.level.root=INFO
+logging.level.com.example.notificationservice=DEBUG
+logging.level.org.springframework.mail=WARN
+logging.level.org.springframework.security=WARN
+logging.level.org.springframework.amqp.rabbit=WARN
+logging.level.org.hibernate=WARN
+logging.level.org.testcontainers=WARN
+  
+  # ===============================
+  # Disable Cloud Features in Tests
+  # ===============================
+spring.cloud.compatibility-verifier.enabled=false
+spring.cloud.service-registry.auto-registration.enabled=false
