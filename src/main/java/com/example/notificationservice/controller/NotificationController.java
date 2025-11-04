@@ -32,11 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Notification Controller
- * REST API for managing notifications
- * Enhanced with Mailpit testing endpoints
- */
+
 @Slf4j
 @RestController
 @RequestMapping("/api/notifications")

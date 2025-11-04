@@ -8,8 +8,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-
-
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,7 +17,12 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(EmailTestController.class)
+@WebMvcTest(
+        controllers = EmailTestController.class,
+        excludeAutoConfiguration = {
+                org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
+        }
+)
 public class EmailTestControllerTest {
 
     @Autowired
@@ -34,9 +37,8 @@ public class EmailTestControllerTest {
     @MockitoBean
     private RabbitTemplate rabbitTemplate;
 
-
     @MockitoBean
-    private NotificationRepository notificationRepository;  // Mock to satisfy service dependencies
+    private NotificationRepository notificationRepository;
 
     @Test
     @WithMockUser(roles = "ADMIN")

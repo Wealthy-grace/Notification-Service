@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -105,9 +106,18 @@ public class GlobalExceptionHandler {
         private String path;
         private Map<String, String> validationErrors;
     }
+
+    // Optional: Global exception handler to return 401 on AuthenticationCredentialsNotFoundException in method security
+    @RestControllerAdvice
+    public class RestExceptionHandler {
+
+        @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+        public ResponseEntity<String> handleAuthException(AuthenticationCredentialsNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+    }
+
 }
-
-
 
 
 
