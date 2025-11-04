@@ -218,6 +218,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: notification-service-jar
+          path: build/libs/
+
+      - name: Verify JAR file
+        run: |
+          echo "Contents of build/libs/:"
+          ls -lh build/libs/
+          if [ ! -f build/libs/*.jar ]; then
+            echo "ERROR: JAR file not found!"
+            exit 1
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
