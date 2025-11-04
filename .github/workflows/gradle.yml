@@ -20,12 +20,6 @@ jobs:
     name: Build & Code Quality Analysis
     runs-on: ubuntu-latest
 
-    # Enable Docker for Testcontainers
-    services:
-      docker:
-        image: docker:dind
-        options: --privileged
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,11 +31,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'zulu'
-
-      - name: Start Docker
-        run: |
-          docker --version
-          docker info || echo "Docker not ready yet"
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
@@ -63,12 +52,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build and analyze
+      - name: Build and Test
+        run: ./gradlew clean build --info --stacktrace
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew build sonar --info --stacktrace
-        continue-on-error: false
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
+
+      - name: Generate Coverage Report
+        run: ./gradlew jacocoTestReport --info
 
       - name: Display test failures
         if: failure()
@@ -91,6 +82,12 @@ jobs:
           name: coverage-report
           path: build/reports/jacoco/test/
           retention-days: 7
+
+      - name: SonarCloud Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonar --info --stacktrace
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
