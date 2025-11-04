@@ -1,10 +1,165 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email Address</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .verification-box {
+            background: #f8f9fa;
+            border: 2px solid #4facfe;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .verification-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .code-box {
+            background: #e7f3ff;
+            border: 2px dashed #2196F3;
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #0d47a1;
+        }
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
 </head>
 <body>
-$END$
+<div class="container">
+    <div class="header">
+        <h1>✉️ Verify Your Email</h1>
+    </div>
+
+    <div class="content">
+        <h2>Hi <span th:text="${userName}">User</span>! 👋</h2>
+
+        <div class="verification-box">
+            <div class="verification-icon">📧</div>
+            <p style="margin: 0; font-size: 18px;">
+                <strong>Almost there! Please verify your email address</strong>
+            </p>
+        </div>
+
+        <p>Thank you for signing up! To complete your registration and start using Property Rental Platform, please verify your email address by clicking the button below:</p>
+
+        <div style="text-align: center;">
+            <a th:href="${verificationLink}" class="button">
+                ✓ Verify Email Address
+            </a>
+        </div>
+
+        <div class="info">
+            <p style="margin: 0;"><strong>💡 Alternative: Enter this verification code</strong></p>
+            <div class="code-box">
+                <span th:text="${code}">VERIFY123</span>
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">
+                You can also enter this code on the verification page to activate your account.
+            </p>
+        </div>
+
+        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 0;"><strong>⏱️ Important:</strong></p>
+            <p style="margin: 10px 0 0 0;">
+                This verification link expires in <strong th:text="${expirationHours}">24</strong> hours. If the link expires, you can request a new verification email from the login page.
+            </p>
+        </div>
+
+        <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 0;"><strong>🎯 Why Verify?</strong></p>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 14px;">
+                <li>Secure your account</li>
+                <li>Access all platform features</li>
+                <li>Receive important property notifications</li>
+                <li>Reset your password if needed</li>
+            </ul>
+        </div>
+
+        <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 0;"><strong>⚠️ Didn't Sign Up?</strong></p>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">
+                If you didn't create an account with Property Rental Platform, please ignore this email. No account will be created without verification.
+            </p>
+        </div>
+
+        <p style="margin-top: 30px; color: #6c757d; font-size: 14px;">
+            If you're having trouble clicking the button, copy and paste the URL into your web browser.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 Property Rental Platform. All rights reserved.</p>
+        <p>This is an automated verification email, please do not reply.</p>
+        <p style="margin-top: 10px;">
+            <a href="#" style="color: #4facfe;">Need Help?</a> |
+            <a href="#" style="color: #4facfe;">Contact Support</a>
+        </p>
+        <p style="margin-top: 10px;">
+            <strong>📧 Testing with Mailpit</strong><br>
+            View this email at: <a href="http://localhost:8025" style="color: #4facfe;">http://localhost:8025</a>
+        </p>
+    </div>
+</div>
 </body>
 </html>

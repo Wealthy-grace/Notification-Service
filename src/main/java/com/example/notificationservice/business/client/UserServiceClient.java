@@ -1,14 +1,11 @@
-package com.example.notificationservice.clients;
+package com.example.notificationservice.business.client;
 
 import com.example.notificationservice.domain.dto.UserDto;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 
-/**
- * User Service REST Client
- * Communicates with User Service to fetch user details
- */
+
 @HttpExchange
 public interface UserServiceClient {
 
@@ -43,6 +40,11 @@ public interface UserServiceClient {
      */
     @GetExchange("/api/internal/users/username/{username}/role")
     String getUserRoleByUsername(@PathVariable("username") String username);
+
+
+    // ✅ Update this path to match User Service
+    @GetExchange("/api/auth/user/id/{id}")
+    UserDto getUsersById(@PathVariable("id") Long id);
 }
 
 

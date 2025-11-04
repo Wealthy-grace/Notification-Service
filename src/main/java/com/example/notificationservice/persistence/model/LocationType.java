@@ -1,4 +1,4 @@
-package com.example.propertyservice.persistence.model;
+package com.example.notificationservice.persistence.model;
 
 public enum LocationType {
 

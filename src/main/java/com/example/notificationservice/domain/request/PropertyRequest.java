@@ -1,7 +1,9 @@
-package com.example.propertyservice.domain.request;
+package com.example.notificationservice.domain.request;
 
-import com.example.propertyservice.persistence.model.HouseType;
-import com.example.propertyservice.persistence.model.LocationType;
+
+import com.example.notificationservice.persistence.model.HouseType;
+import com.example.notificationservice.persistence.model.LocationType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.*;
@@ -50,8 +52,9 @@ public class PropertyRequest {
     @NotBlank(message = "Surface area is required")
     private String  surfaceArea;
 
-
-   private boolean isRented;
+    @NotNull(message = "Property rental status is required")
+    @JsonProperty("propertyIsRented")
+   private boolean propertyIsRented;
 
     @NotBlank(message = "Postal code is required")
     @Pattern(regexp = "\\d{4}[A-Z]{2}", message = "Invalid Dutch postal code format")

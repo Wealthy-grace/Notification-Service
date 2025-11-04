@@ -1,4 +1,4 @@
-package com.example.notificationservice.producer;
+package com.example.notificationservice.consumer;
 
 import com.example.notificationservice.business.client.UserServiceClient;
 import com.example.notificationservice.business.interfaces.EmailService;
@@ -12,8 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
@@ -25,62 +25,65 @@ public class NotificationConsumer {
     private final EmailService emailService;
     private final UserServiceClient userServiceClient;
     private final NotificationRepository notificationRepository;
-    private final NotificationProducer notificationProducer;
 
-    @RabbitListener(queues = "${rabbitmq.queue.notification}")
-    @Transactional
-    public void consumeNotification(NotificationMessage message) {
-        log.info("📥 Received notification message for user: {}", message.getUserEmail());
-
-        try {
-            updateNotificationStatus(message.getUserId(), NotificationStatus.PROCESSING, null);
-
-            if (message.getHtmlContent() != null && !message.getHtmlContent().isEmpty()) {
-                emailService.sendHtmlEmail(message.getUserEmail(), message.getSubject(), message.getHtmlContent());
-            } else {
-                emailService.sendEmail(message.getUserEmail(), message.getSubject(), message.getMessage());
-            }
-
-            updateNotificationStatus(message.getUserId(), NotificationStatus.SENT, null);
-            log.info("✅ Notification processed and email sent to: {}", message.getUserEmail());
-        } catch (Exception e) {
-            log.error("❌ Failed to process notification for {}: {}", message.getUserEmail(), e.getMessage(), e);
-            handleNotificationFailure(message, e);
-        }
-    }
-
-    @RabbitListener(queues = "${rabbitmq.queue.email}")
+    /**
+     * Consume email.queue messages and send email
+     */
+    @RabbitListener(queues = "${rabbitmq.queue.email}", id = "emailQueueListener")
     @Transactional
     public void consumeEmail(NotificationMessage message) {
-        log.info("📥 Received email message for: {}", message.getUserEmail());
+        log.info(" EMAIL QUEUE: Received message for: {}", message.getUserEmail());
 
         try {
             if (message.getHtmlContent() != null && !message.getHtmlContent().isEmpty()) {
-                emailService.sendHtmlEmail(message.getUserEmail(), message.getSubject(), message.getHtmlContent());
+                emailService.sendHtmlEmail(
+                        message.getUserEmail(),
+                        message.getSubject(),
+                        message.getHtmlContent()
+                );
             } else {
-                emailService.sendEmail(message.getUserEmail(), message.getSubject(), message.getMessage());
+                emailService.sendEmail(
+                        message.getUserEmail(),
+                        message.getSubject(),
+                        message.getMessage()
+                );
             }
 
             log.info("✅ Email sent successfully to: {}", message.getUserEmail());
+
         } catch (Exception e) {
             log.error("❌ Failed to send email to {}: {}", message.getUserEmail(), e.getMessage(), e);
-            handleEmailFailure(message, e);
         }
     }
 
-    @RabbitListener(queues = "${rabbitmq.queue.property-notification}")
+    /**
+     * Consume property-notification.queue messages
+     * THIS IS THE KEY LISTENER THAT WAS MISSING!
+     */
+    /**
+     * Consume property-notification.queue messages
+     * ✅ NO LONGER NEEDS TO CALL USER SERVICE
+     */
+    @RabbitListener(queues = "${rabbitmq.queue.property-notification}", id = "propertyNotificationQueueListener")
     @Transactional
     public void consumePropertyNotification(NotificationMessage message) {
-        log.info("📥 Received property notification for user ID: {}", message.getUserId());
+        log.info("📥 PROPERTY NOTIFICATION QUEUE: Received message for user: {}", message.getUserEmail());
+        log.info("🔍 Message details: propertyId={}, propertyTitle={}",
+                message.getPropertyId(), message.getPropertyTitle());
 
         try {
-            UserDto user = getUserWithCircuitBreaker(message.getUserId());
-
-            if (user == null || user.getEmail() == null) {
-                log.error("❌ User not found or no email for user ID: {}", message.getUserId());
+            // ✅ USE USER DATA FROM MESSAGE (no need to fetch)
+            if (message.getUserEmail() == null || message.getUserEmail().isEmpty()) {
+                log.error("❌ No email provided in message for user ID: {}", message.getUserId());
+                updateNotificationStatus(message.getUserId(), NotificationStatus.FAILED,
+                        "No email address in message");
                 return;
             }
 
+            log.info("👤 Processing notification for user: {} <{}>",
+                    message.getUserName(), message.getUserEmail());
+
+            // Build PropertyDto from message
             PropertyDto property = PropertyDto.builder()
                     .id(message.getPropertyId())
                     .title(message.getPropertyTitle())
@@ -91,54 +94,104 @@ public class NotificationConsumer {
                     .image3(message.getPropertyImageUrl3())
                     .build();
 
+            // Update status to PROCESSING
             updateNotificationStatus(message.getUserId(), NotificationStatus.PROCESSING, null);
 
+            // Send property notification email
+            String fullName = (message.getUserFirstName() != null ? message.getUserFirstName() : "") +
+                    " " +
+                    (message.getUserLastName() != null ? message.getUserLastName() : "");
+            fullName = fullName.trim();
+            if (fullName.isEmpty()) {
+                fullName = message.getUserName();
+            }
+
+            log.info("📧 Sending property notification email to: {}", message.getUserEmail());
             emailService.sendNewPropertyNotification(
-                    user.getEmail(),
-                    user.getFirstName() + " " + user.getLastName(),
+                    message.getUserEmail(),
+                    fullName,
                     property
             );
 
+            // Update status to SENT
             updateNotificationStatus(message.getUserId(), NotificationStatus.SENT, null);
-            log.info("✅ Property notification email sent to: {}", user.getEmail());
+            log.info("✅✅✅ Property notification email sent successfully to: {}", message.getUserEmail());
 
         } catch (Exception e) {
-            log.error("❌ Failed to process property notification for user ID {}: {}",
-                    message.getUserId(), e.getMessage(), e);
-            handleNotificationFailure(message, e);
+            log.error("❌❌❌ Failed to process property notification for user {}: {}",
+                    message.getUserEmail(), e.getMessage(), e);
+            updateNotificationStatus(message.getUserId(), NotificationStatus.FAILED,
+                    e.getMessage());
         }
     }
 
-    @CircuitBreaker(name = "userService", fallbackMethod = "getUserFallback")
-    private UserDto getUserWithCircuitBreaker(Long userId) {
-        return userServiceClient.getUsersById(userId);
+    /**
+     * Consume general notification.queue messages
+     */
+    @RabbitListener(queues = "${rabbitmq.queue.notification}", id = "notificationQueueListener")
+    @Transactional
+    public void consumeNotification(NotificationMessage message) {
+        log.info("📥 NOTIFICATION QUEUE: Received message for: {}", message.getUserEmail());
+
+        try {
+            updateNotificationStatus(message.getUserId(), NotificationStatus.PROCESSING, null);
+
+            if (message.getHtmlContent() != null && !message.getHtmlContent().isEmpty()) {
+                emailService.sendHtmlEmail(
+                        message.getUserEmail(),
+                        message.getSubject(),
+                        message.getHtmlContent()
+                );
+            } else {
+                emailService.sendEmail(
+                        message.getUserEmail(),
+                        message.getSubject(),
+                        message.getMessage()
+                );
+            }
+
+            updateNotificationStatus(message.getUserId(), NotificationStatus.SENT, null);
+            log.info("✅ Notification processed and email sent to: {}", message.getUserEmail());
+
+        } catch (Exception e) {
+            log.error("❌ Failed to process notification for {}: {}",
+                    message.getUserEmail(), e.getMessage(), e);
+            updateNotificationStatus(message.getUserId(), NotificationStatus.FAILED,
+                    e.getMessage());
+        }
     }
 
-    private UserDto getUserFallback(Long userId, Exception ex) {
-        log.error("⚠️ USER SERVICE CIRCUIT BREAKER ACTIVATED for user ID: {}", userId);
-        UserDto fallbackUser = new UserDto();
-        fallbackUser.setId(userId);
-        fallbackUser.setEmail("fallback-user-" + userId + "@system.local");
-        fallbackUser.setFirstName("System");
-        fallbackUser.setLastName("User");
-        fallbackUser.setUsername("fallback-user-" + userId);
-        return fallbackUser;
-    }
-
+    /**
+     * Update notification status in database
+     */
     private void updateNotificationStatus(Long userId, NotificationStatus status, String errorMessage) {
+        if (userId == null) {
+            log.warn("⚠️ Cannot update notification status - userId is null");
+            return;
+        }
+
         try {
             notificationRepository.findFirstByUserIdAndStatusInOrderByCreatedAtDesc(
                             userId,
-                            Arrays.asList(NotificationStatus.PENDING, NotificationStatus.PROCESSING, NotificationStatus.RETRYING)
+                            Arrays.asList(NotificationStatus.PENDING,
+                                    NotificationStatus.PROCESSING,
+                                    NotificationStatus.RETRYING)
                     )
                     .ifPresent(notification -> {
                         notification.setStatus(status);
                         notification.setUpdatedAt(LocalDateTime.now());
 
-                        if (errorMessage != null) notification.setErrorMessage(errorMessage);
-                        if (status == NotificationStatus.SENT) notification.setSentAt(LocalDateTime.now());
-                        if (status == NotificationStatus.RETRYING)
+                        if (errorMessage != null) {
+                            notification.setErrorMessage(errorMessage);
+                        }
+
+                        if (status == NotificationStatus.SENT) {
+                            notification.setSentAt(LocalDateTime.now());
+                        }
+
+                        if (status == NotificationStatus.RETRYING) {
                             notification.setRetryCount(notification.getRetryCount() + 1);
+                        }
 
                         notificationRepository.save(notification);
                         log.debug("💾 Notification status updated to: {} for user ID: {}", status, userId);
@@ -146,29 +199,5 @@ public class NotificationConsumer {
         } catch (Exception e) {
             log.error("❌ Failed to update notification status: {}", e.getMessage(), e);
         }
-    }
-
-    private void handleNotificationFailure(NotificationMessage message, Exception exception) {
-        try {
-            if (message.getRetryCount() >= message.getMaxRetries()) {
-                updateNotificationStatus(message.getUserId(), NotificationStatus.FAILED,
-                        "Max retries reached: " + exception.getMessage());
-                return;
-            }
-
-            message.setRetryCount(message.getRetryCount() + 1);
-            updateNotificationStatus(message.getUserId(), NotificationStatus.RETRYING,
-                    "Retry attempt " + message.getRetryCount());
-
-            notificationProducer.retryNotification(message);
-
-        } catch (Exception e) {
-            log.error("❌ Failed to handle notification failure: {}", e.getMessage(), e);
-        }
-    }
-
-    private void handleEmailFailure(NotificationMessage message, Exception exception) {
-        log.error("❌ Email delivery failed for: {}. Reason: {}",
-                message.getUserEmail(), exception.getMessage());
     }
 }

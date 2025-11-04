@@ -1,0 +1,68 @@
+## Application Properties for Notification Service with RabbitMQ
+## Add these properties to your application.yml or application.properties
+#
+#spring:
+#  application:
+#    name: Notification-Service
+#
+#  # RabbitMQ Configuration
+#  rabbitmq:
+#    host: ${SPRING_RABBITMQ_HOST:localhost}
+#    port: ${SPRING_RABBITMQ_PORT:5672}
+#    username: ${SPRING_RABBITMQ_USERNAME:guest}
+#    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+#    listener:
+#      simple:
+#        concurrency: ${SPRING_RABBITMQ_LISTENER_SIMPLE_CONCURRENCY:3}
+#        max-concurrency: ${SPRING_RABBITMQ_LISTENER_SIMPLE_MAX_CONCURRENCY:10}
+#        prefetch: ${SPRING_RABBITMQ_LISTENER_SIMPLE_PREFETCH:1}
+#        acknowledge-mode: auto
+#        retry:
+#          enabled: true
+#          initial-interval: 3000
+#          max-attempts: 3
+#          multiplier: 2.0
+#
+#  # Mail Configuration (Mailpit)
+#  mail:
+#    host: ${SPRING_MAIL_HOST:localhost}
+#    port: ${SPRING_MAIL_PORT:1025}
+#    properties:
+#      mail:
+#        smtp:
+#          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}
+#          starttls:
+#            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}
+#
+## RabbitMQ Queue Configuration
+#rabbitmq:
+#  exchange:
+#    notification: ${RABBITMQ_EXCHANGE_NOTIFICATION:notification.exchange}
+#
+#  queue:
+#    notification: ${RABBITMQ_QUEUE_NOTIFICATION:notification.queue}
+#    email: ${RABBITMQ_QUEUE_EMAIL:email.queue}
+#    property-notification: ${RABBITMQ_QUEUE_PROPERTY_NOTIFICATION:property-notification.queue}
+#
+#  routing-key:
+#    notification: ${RABBITMQ_ROUTING_KEY_NOTIFICATION:notification.routing.key}
+#    email: ${RABBITMQ_ROUTING_KEY_EMAIL:email.routing.key}
+#    property-notification: ${RABBITMQ_ROUTING_KEY_PROPERTY_NOTIFICATION:property-notification.routing.key}
+#
+#  notification:
+#    max-retries: ${RABBITMQ_NOTIFICATION_MAX_RETRIES:3}
+#
+## Email Configuration
+#app:
+#  email:
+#    from: ${APP_EMAIL_FROM:noreply@propertyrental.com}
+#    from-name: ${APP_EMAIL_FROM_NAME:Property Rental Platform}
+#    enabled: ${APP_EMAIL_ENABLED:true}
+#
+## Logging
+#logging:
+#  level:
+#    root: INFO
+#    com.example.notificationservice: DEBUG
+#    org.springframework.amqp: DEBUG
+#    org.springframework.mail: DEBUG

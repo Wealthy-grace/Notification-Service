@@ -1,0 +1,191 @@
+version: '3.8'
+
+services:
+  # ==================== NOTIFICATION SERVICE ====================
+
+  # MySQL Database for Notification Service
+  notification-mysql:
+    image: mysql:8.3
+    container_name: notification-mysql
+    ports:
+      - "3318:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: Server123@
+      MYSQL_DATABASE: notification-service
+    volumes:
+      - notification_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - shared-microservices-network
+
+  # Mailpit (Email Testing SMTP Server)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025/api/v1/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - shared-microservices-network
+
+  # Notification Service Application
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: notification-service:latest
+    container_name: notification-service-app
+    depends_on:
+      notification-mysql:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+      # CRITICAL: Wait for RabbitMQ to be ready!
+    environment:
+      # Application Configuration
+      SPRING_APPLICATION_NAME: Notification-Service
+      SERVER_PORT: 8085
+
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:mysql://notification-mysql:3306/notification-service?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Server123@
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+
+      # Keycloak OAuth2 Resource Server
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8090/realms/friendly-housing
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak-server:8080/realms/friendly-housing/protocol/openid-connect/certs
+
+      # Keycloak OAuth2 Client Configuration
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: notification-service
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: 5JE9xG0ZS7UEGN06a3QljS0t3I0DcOn6
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_AUTHORIZATION_GRANT_TYPE: client_credentials
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_SCOPE: openid,profile,email
+
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/friendly-housing
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak-server:8080/realms/friendly-housing/protocol/openid-connect/token
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_NAME_ATTRIBUTE: preferred_username
+
+      # Keycloak Admin Configuration
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak-server:8080
+      KEYCLOAK_REALM: friendly-housing
+      KEYCLOAK_RESOURCE: notification-service
+      KEYCLOAK_CREDENTIALS_SECRET: Lrf6ZwUcAqOnvg4fl89kKyiOLCaWDb6B
+
+      # Mail Configuration (Mailpit SMTP)
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: false
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: false
+      APP_EMAIL_FROM: noreply@propertyrental.com
+      APP_EMAIL_FROM_NAME: Property Rental Platform
+      APP_EMAIL_ENABLED: true
+
+      # RabbitMQ Configuration - Points to shared RabbitMQ instance
+      SPRING_RABBITMQ_HOST: shared-rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_RABBITMQ_CONNECTION_TIMEOUT: 60000
+      SPRING_RABBITMQ_REQUESTED_HEARTBEAT: 30
+
+
+      # RabbitMQ Listener Configuration - CRITICAL FOR CONSUMERS!
+      SPRING_RABBITMQ_LISTENER_SIMPLE_AUTO_STARTUP: "true"
+      SPRING_RABBITMQ_LISTENER_SIMPLE_ACKNOWLEDGE_MODE: auto
+      SPRING_RABBITMQ_LISTENER_SIMPLE_CONCURRENCY: 3
+      SPRING_RABBITMQ_LISTENER_SIMPLE_MAX_CONCURRENCY: 10
+      SPRING_RABBITMQ_LISTENER_SIMPLE_PREFETCH: 1
+
+      # RabbitMQ Retry Configuration
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_ENABLED: "true"
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_INITIAL_INTERVAL: 3000
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MAX_ATTEMPTS: 3
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MULTIPLIER: 2.0
+      SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MAX_INTERVAL: 10000
+
+      # RabbitMQ Queue Configuration
+      RABBITMQ_EXCHANGE_NOTIFICATION: notification.exchange
+      RABBITMQ_QUEUE_NOTIFICATION: notification.queue
+      RABBITMQ_QUEUE_EMAIL: email.queue
+      RABBITMQ_QUEUE_PROPERTY_NOTIFICATION: property-notification.queue
+      RABBITMQ_QUEUE_DLQ: notification.dlq
+
+      # RabbitMQ Logging Configuration
+      # Add these lines to the environment section
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_AMQP: TRACE
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_AMQP_RABBIT_LISTENER: TRACE
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_AMQP_RABBIT_CONFIG: TRACE
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CONTEXT_ANNOTATION: DEBUG
+
+      # RabbitMQ Exchange Configuration
+      RABBITMQ_EXCHANGE_DLX: notification.dlx
+
+      # RabbitMQ Routing Keys
+      RABBITMQ_ROUTING_KEY_NOTIFICATION: notification.routing.key
+      RABBITMQ_ROUTING_KEY_EMAIL: email.routing.key
+      RABBITMQ_ROUTING_KEY_PROPERTY_NOTIFICATION: property-notification.routing.key
+      RABBITMQ_ROUTING_KEY_DLQ: dlq.routing.key
+
+      # Notification Settings
+      RABBITMQ_NOTIFICATION_MAX_RETRIES: 3
+
+      # Service URLs
+      APP_SERVICES_PROPERTY_SERVICE_URL: http://property-service-app:8082
+      APP_SERVICES_USER_SERVICE_URL: http://user-service-app:8081
+
+      # Actuator Configuration
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,circuitbreakers,circuitbreakerevents,metrics,prometheus
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: when-authorized
+
+      # Logging - INCREASED DEBUG LOGGING FOR RABBITMQ
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_COM_EXAMPLE_NOTIFICATIONSERVICE: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: INFO
+#      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_AMQP: DEBUG
+#      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_AMQP_RABBIT_LISTENER: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_AMQP_RABBIT_CONNECTION: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_MAIL: DEBUG
+
+      # JVM Configuration
+      JAVA_OPTS: -Xmx512m -Xms128m
+
+    ports:
+      - "8085:8085"
+    networks:
+      - shared-microservices-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8085/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
+volumes:
+  notification_mysql_data:
+    driver: local
+
+networks:
+  shared-microservices-network:
+    external: true
