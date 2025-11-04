@@ -108,7 +108,7 @@ jobs:
           retention-days: 1
 
   # ==========================================
-  # Job 2: Code Quality (SonarCloud) - Optional
+  # Job 2: Code Quality (SonarCloud)
   # ==========================================
   sonarcloud:
     name: SonarCloud Analysis
@@ -206,12 +206,260 @@ jobs:
           retention-days: 1
 
   # ==========================================
-  # Job 4: Push to Docker Hub
+  # Job 4: K6 Performance Tests
+  # ==========================================
+  performance-tests:
+    name: K6 Performance Tests
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: notification-service-image
+
+      - name: Load Docker image
+        run: docker load < notification-service-image.tar.gz
+
+      - name: Create Docker network
+        run: docker network create notification-test-network || true
+
+      - name: Start RabbitMQ
+        run: |
+          docker run -d --name rabbitmq \
+            --network notification-test-network \
+            -p 5672:5672 \
+            -p 15672:15672 \
+            -e RABBITMQ_DEFAULT_USER=guest \
+            -e RABBITMQ_DEFAULT_PASS=guest \
+            rabbitmq:3.12-management
+
+      - name: Wait for RabbitMQ
+        run: |
+          echo "⏳ Waiting for RabbitMQ to start..."
+          timeout 120 bash -c 'until curl -s http://localhost:15672 > /dev/null; do echo "Waiting..."; sleep 3; done'
+          echo "✅ RabbitMQ is ready!"
+          sleep 5
+
+      - name: Start Mailpit (Email Testing)
+        run: |
+          docker run -d --name mailpit \
+            --network notification-test-network \
+            -p 1025:1025 \
+            -p 8025:8025 \
+            axllent/mailpit:latest
+
+      - name: Wait for Mailpit
+        run: |
+          echo "⏳ Waiting for Mailpit to start..."
+          timeout 60 bash -c 'until curl -s http://localhost:8025 > /dev/null; do echo "Waiting..."; sleep 3; done'
+          echo "✅ Mailpit is ready!"
+          sleep 3
+
+      - name: Start MySQL (Test Database)
+        run: |
+          docker run -d --name mysql-test \
+            --network notification-test-network \
+            -p 3306:3306 \
+            -e MYSQL_ROOT_PASSWORD=root \
+            -e MYSQL_DATABASE=notification_db \
+            -e MYSQL_USER=notif_user \
+            -e MYSQL_PASSWORD=notif_pass \
+            mysql:8.0
+
+      - name: Wait for MySQL
+        run: |
+          echo "⏳ Waiting for MySQL to start..."
+          timeout 120 bash -c 'until docker exec mysql-test mysqladmin ping -h localhost --silent; do echo "Waiting..."; sleep 3; done'
+          echo "✅ MySQL is ready!"
+          sleep 5
+
+      - name: Start Mock User Service
+        run: |
+          docker run -d --name mock-user-service \
+            --network notification-test-network \
+            -p 8081:5678 \
+            hashicorp/http-echo:latest -text='{"id":"user123","name":"Test User","email":"test@example.com"}' -listen=:5678
+
+      - name: Start Mock Property Service
+        run: |
+          docker run -d --name mock-property-service \
+            --network notification-test-network \
+            -p 8082:5678 \
+            hashicorp/http-echo:latest -text='{"id":"prop123","title":"Test Property"}' -listen=:5678
+
+      - name: Start Notification Service
+        run: |
+          docker run -d --name notification-service \
+            --network notification-test-network \
+            -p 8085:8085 \
+            -e SPRING_PROFILES_ACTIVE=test \
+            -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-test:3306/notification_db \
+            -e SPRING_DATASOURCE_USERNAME=notif_user \
+            -e SPRING_DATASOURCE_PASSWORD=notif_pass \
+            -e SPRING_RABBITMQ_HOST=rabbitmq \
+            -e SPRING_RABBITMQ_PORT=5672 \
+            -e SPRING_RABBITMQ_USERNAME=guest \
+            -e SPRING_RABBITMQ_PASSWORD=guest \
+            -e SPRING_MAIL_HOST=mailpit \
+            -e SPRING_MAIL_PORT=1025 \
+            -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8080/realms/test \
+            -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://localhost:8080/realms/test/protocol/openid-connect/certs \
+            notification-service:test
+
+      - name: Wait for Notification Service
+        run: |
+          echo "⏳ Waiting for Notification Service to start..."
+          timeout 180 bash -c 'until curl -s http://localhost:8085/actuator/health | grep -q "UP"; do echo "Waiting..."; sleep 5; done'
+          echo "✅ Notification Service is ready!"
+          sleep 5
+
+      - name: Create K6 test script
+        run: |
+          mkdir -p k6-tests
+          cat > k6-tests/notification-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          import { Rate } from 'k6/metrics';
+
+          const errorRate = new Rate('errors');
+          const BASE_URL = __ENV.SERVICE_URL || 'http://localhost:8085';
+
+          export const options = {
+            stages: [
+              { duration: '30s', target: 10 },  // Ramp up to 10 users
+              { duration: '1m', target: 10 },   // Stay at 10 users
+              { duration: '30s', target: 0 },   // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<2000'], // 95% of requests should be below 2s
+              errors: ['rate<0.1'],              // Error rate should be less than 10%
+            },
+          };
+
+          export default function () {
+            // Test 1: Health check
+            let healthRes = http.get(`${BASE_URL}/actuator/health`);
+            check(healthRes, {
+              'health check status is 200': (r) => r.status === 200,
+              'health check is UP': (r) => r.body.includes('UP'),
+            }) || errorRate.add(1);
+
+            sleep(1);
+
+            // Test 2: Send welcome email
+            const welcomePayload = JSON.stringify({
+              email: `test${Date.now()}@example.com`,
+              userName: 'Test User',
+            });
+
+            let welcomeRes = http.post(`${BASE_URL}/api/v1/email/welcome`, welcomePayload, {
+              headers: { 'Content-Type': 'application/json' },
+            });
+
+            check(welcomeRes, {
+              'welcome email status is 200 or 201': (r) => r.status === 200 || r.status === 201,
+            }) || errorRate.add(1);
+
+            sleep(2);
+
+            // Test 3: Get notifications (without auth, expect 401 or 403)
+            let notificationsRes = http.get(`${BASE_URL}/api/v1/notifications/user/user123`);
+            check(notificationsRes, {
+              'notifications endpoint responds': (r) => r.status !== 0,
+            });
+
+            sleep(1);
+          }
+
+          export function handleSummary(data) {
+            return {
+              'stdout': textSummary(data, { indent: ' ', enableColors: true }),
+            };
+          }
+
+          function textSummary(data, options) {
+            const indent = options.indent || '';
+            const enableColors = options.enableColors || false;
+          
+            let summary = '\n' + indent + '=== K6 Performance Test Summary ===\n\n';
+          
+            // Request metrics
+            summary += indent + `Total Requests: ${data.metrics.http_reqs.values.count}\n`;
+            summary += indent + `Request Rate: ${data.metrics.http_reqs.values.rate.toFixed(2)}/s\n`;
+            summary += indent + `Failed Requests: ${data.metrics.http_req_failed.values.passes || 0}\n\n`;
+          
+            // Response time metrics
+            summary += indent + `Average Response Time: ${data.metrics.http_req_duration.values.avg.toFixed(2)}ms\n`;
+            summary += indent + `Min Response Time: ${data.metrics.http_req_duration.values.min.toFixed(2)}ms\n`;
+            summary += indent + `Max Response Time: ${data.metrics.http_req_duration.values.max.toFixed(2)}ms\n`;
+            summary += indent + `95th Percentile: ${data.metrics.http_req_duration.values['p(95)'].toFixed(2)}ms\n\n`;
+          
+            // Error rate
+            const errorRate = data.metrics.errors ? data.metrics.errors.values.rate : 0;
+            summary += indent + `Error Rate: ${(errorRate * 100).toFixed(2)}%\n\n`;
+          
+            // Test result
+            const testPassed = errorRate < 0.1 && data.metrics.http_req_duration.values['p(95)'] < 2000;
+            summary += indent + (testPassed ? '✅ Test PASSED' : '❌ Test FAILED') + '\n';
+          
+            return summary;
+          }
+          EOF
+
+      - name: Install K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | \
+            sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run K6 Performance Tests
+        run: k6 run k6-tests/notification-test.js
+        env:
+          SERVICE_URL: http://localhost:8085
+        continue-on-error: true
+
+      - name: Check Mailpit for sent emails
+        run: |
+          echo "📧 Checking sent emails in Mailpit..."
+          curl -s http://localhost:8025/api/v1/messages | jq '.messages | length' || echo "No messages found"
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "🔍 Notification Service logs:"
+          docker logs notification-service || echo "Service container not found"
+          echo ""
+          echo "🔍 RabbitMQ logs:"
+          docker logs rabbitmq || echo "RabbitMQ container not found"
+          echo ""
+          echo "🔍 MySQL logs:"
+          docker logs mysql-test || echo "MySQL container not found"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop notification-service rabbitmq mailpit mysql-test mock-user-service mock-property-service || true
+          docker rm notification-service rabbitmq mailpit mysql-test mock-user-service mock-property-service || true
+          docker network rm notification-test-network || true
+
+  # ==========================================
+  # Job 5: Push to Docker Hub
   # ==========================================
   docker-push:
     name: Push to Docker Hub
     runs-on: ubuntu-latest
-    needs: docker-build
+    needs: [docker-build, performance-tests]
     if: github.ref == 'refs/heads/main'
 
     steps:
