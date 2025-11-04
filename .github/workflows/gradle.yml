@@ -20,6 +20,12 @@ jobs:
     name: Build & Code Quality Analysis
     runs-on: ubuntu-latest
 
+    # Enable Docker for Testcontainers
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,6 +37,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'zulu'
+
+      - name: Start Docker
+        run: |
+          docker --version
+          docker info || echo "Docker not ready yet"
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
@@ -56,7 +67,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew build sonar --info
+        run: ./gradlew build sonar --info --stacktrace
+        continue-on-error: false
+
+      - name: Display test failures
+        if: failure()
+        run: |
+          echo "🔍 Test failures detected!"
+          find build/test-results -name "*.xml" -exec cat {} \;
 
       - name: Upload Test Results
         if: always()
