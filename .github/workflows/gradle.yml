@@ -52,31 +52,68 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build and Test
-        run: ./gradlew clean build --info --stacktrace
+      - name: Build without tests first
+        run: ./gradlew clean build -x test --info
+        continue-on-error: false
+
+      - name: Run tests with detailed output
+        run: ./gradlew test --info --stacktrace --no-daemon
         env:
           TESTCONTAINERS_RYUK_DISABLED: true
           TESTCONTAINERS_CHECKS_DISABLE: true
+          SPRING_PROFILES_ACTIVE: test
+        continue-on-error: true
+        id: test-run
 
-      - name: Generate Coverage Report
-        run: ./gradlew jacocoTestReport --info
-
-      - name: Display test failures
-        if: failure()
+      - name: Display detailed test failures
+        if: steps.test-run.outcome == 'failure'
         run: |
-          echo "🔍 Test failures detected!"
-          find build/test-results -name "*.xml" -exec cat {} \;
+          echo "🔍 ================================="
+          echo "🔍 DETAILED TEST FAILURE ANALYSIS"
+          echo "🔍 ================================="
+          echo ""
+          
+          echo "📊 Test Summary from Gradle:"
+          find build/test-results -name "*.xml" -exec echo "Processing: {}" \; -exec grep -h "testcase\|failure\|error" {} \; 2>/dev/null || echo "No XML results found"
+          echo ""
+          
+          echo "❌ Failed Tests:"
+          find build/test-results -name "*.xml" -print0 | xargs -0 grep -l "failures=\"[1-9]" 2>/dev/null || echo "No failures attribute found"
+          echo ""
+          
+          echo "📝 Test Result Files:"
+          find build/test-results -type f -name "*.xml" -exec echo "File: {}" \; -exec cat {} \; 2>/dev/null
+          echo ""
+          
+          echo "📋 HTML Test Reports:"
+          find build/reports/tests -name "index.html" 2>/dev/null || echo "No HTML reports"
+          echo ""
+          
+          echo "🔎 Searching for error messages:"
+          grep -r "AssertionError\|Exception\|Error" build/test-results/ 2>/dev/null || echo "No error patterns found"
+          echo ""
+          
+          echo "📄 Test Classes with Failures:"
+          find build/test-results -name "TEST-*.xml" -exec grep -l 'failures="[^0]' {} \; 2>/dev/null
+          
+          exit 1
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: build/test-results/test/
+          path: |
+            build/test-results/test/
+            build/reports/tests/test/
           retention-days: 7
 
+      - name: Generate Coverage Report
+        if: steps.test-run.outcome == 'success'
+        run: ./gradlew jacocoTestReport --info
+
       - name: Upload Coverage Report
-        if: always()
+        if: steps.test-run.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -84,12 +121,14 @@ jobs:
           retention-days: 7
 
       - name: SonarCloud Analysis
+        if: steps.test-run.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar --info --stacktrace
 
       - name: Upload JAR artifact
+        if: steps.test-run.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: notification-service-jar
@@ -97,11 +136,16 @@ jobs:
           retention-days: 1
 
       - name: SonarCloud Quality Gate check
+        if: steps.test-run.outcome == 'success'
         uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         continue-on-error: true
+
+      - name: Fail if tests failed
+        if: steps.test-run.outcome == 'failure'
+        run: exit 1
 
   # ==========================================
   # Job 2: Security Scan
