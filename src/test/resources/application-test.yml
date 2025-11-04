@@ -20,7 +20,7 @@ spring:
         format_sql: false
     open-in-view: false
 
-  # ADD THIS SECTION - Thymeleaf Configuration
+  # Thymeleaf Configuration
   thymeleaf:
     enabled: true
     check-template-location: true
@@ -52,13 +52,13 @@ spring:
     password: guest
     virtual-host: /
 
-  # Disable OAuth2 for Tests
+  # FIXED: Provide dummy OAuth2 configuration for tests
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri:
-          jwk-set-uri:
+          issuer-uri: http://localhost:8080/realms/test
+          jwk-set-uri: http://localhost:8080/realms/test/protocol/openid-connect/certs
 
   # Cloud Configuration
   cloud:
