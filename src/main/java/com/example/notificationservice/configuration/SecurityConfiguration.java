@@ -36,8 +36,21 @@ public class SecurityConfiguration {
 
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        // CRITICAL: Actuator endpoints for Kubernetes probes
+                        .requestMatchers("/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/info").permitAll()
+                        .requestMatchers("/actuator/metrics/**").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
+                        //.requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/api/notifications/confirm-by-token/**").permitAll()
+                        // Internal endpoints - allow service-to-service calls
+                        .requestMatchers("/api/notifications/new-property").permitAll()
+                        .requestMatchers("/api/notifications/booking-confirmation").permitAll()
+                        .requestMatchers("/api/notifications/appointment-reminder").permitAll()
+
+                        // All other notification endpoints require authentication
+                        .requestMatchers("/api/notifications/**").authenticated()
 
                         // All appointment endpoints require authentication
                         // Fine-grained authorization is handled by AppointmentSecurityService
@@ -116,86 +129,3 @@ public class SecurityConfiguration {
 
 
 
-//// NEW TODO:
-//package com.example.notificationservice.configuration;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.http.HttpMethod;
-//import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-//import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-//import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-//import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-//import org.springframework.security.config.http.SessionCreationPolicy;
-//import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-//import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-//import org.springframework.security.web.SecurityFilterChain;
-//
-/////
-////  Security Configuration
-////  Configures OAuth2 Resource Server with Keycloak JWT authentication
-////
-//@Configuration
-//@EnableWebSecurity
-//@EnableMethodSecurity
-//@RequiredArgsConstructor
-//public class SecurityConfiguration {
-//
-//    // Configure security filter chain
-//
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .csrf(AbstractHttpConfigurer::disable)
-//                .authorizeHttpRequests(auth -> auth
-//                        // Public endpoints
-//                        .requestMatchers(
-//                                "/actuator/**",
-//                                "/api-docs/**",
-//                                "/swagger-ui/**",
-//                                "/swagger-ui.html",
-//                                "/v3/api-docs/**"
-//                        ).permitAll()
-//
-//                        // Internal endpoints (from other services)
-//                        .requestMatchers("/api/internal/**").permitAll()
-//
-//                        // Admin endpoints
-//                        .requestMatchers(HttpMethod.DELETE, "/api/notifications/**").hasRole("ADMIN")
-//                        .requestMatchers("/api/notifications/statistics").hasRole("ADMIN")
-//                        .requestMatchers("/api/notifications/retry-failed").hasRole("ADMIN")
-//
-//                        // Authenticated endpoints
-//                        .requestMatchers("/api/notifications/**").authenticated()
-//
-//                        // Any other request requires authentication
-//                        .anyRequest().authenticated()
-//                )
-//                .oauth2ResourceServer(oauth2 -> oauth2
-//                        .jwt(jwt -> jwt
-//                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
-//                        )
-//                )
-//                .sessionManagement(session -> session
-//                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-//                );
-//
-//        return http.build();
-//    }
-//
-////     Configure JWT authentication converter
-////      Extracts roles from Keycloak JWT token
-//
-//    @Bean
-//    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-//        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-//        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
-//        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
-//
-//        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-//        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-//
-//        return jwtAuthenticationConverter;
-//    }
-//}
-//

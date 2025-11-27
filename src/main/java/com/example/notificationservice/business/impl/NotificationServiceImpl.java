@@ -32,10 +32,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Notification Service Implementation with RabbitMQ Integration
- * Main business logic for notification management
- */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -68,19 +65,19 @@ public class NotificationServiceImpl implements NotificationService {
         fallbackUser.setLastName("User");
         fallbackUser.setUsername("fallback-user-" + userId);
 
-        log.warn("📧 Using FALLBACK user data for notification to user ID: {}", userId);
+        log.warn(" Using FALLBACK user data for notification to user ID: {}", userId);
         return fallbackUser;
     }
 
     @CircuitBreaker(name = "propertyService", fallbackMethod = "getPropertyByIdFallback")
     @Retry(name = "propertyService")
     public PropertyServiceResponse getPropertyWithCircuitBreaker(Long propertyId) {
-        log.debug("🔍 Calling Property Service for property ID: {}", propertyId);
+        log.debug(" Calling Property Service for property ID: {}", propertyId);
         return propertyServiceClient.getPropertyById(propertyId);
     }
 
     private PropertyServiceResponse getPropertyByIdFallback(Long propertyId, Exception ex) {
-        log.error("⚠️ PROPERTY SERVICE CIRCUIT BREAKER ACTIVATED for property ID: {}. Reason: {}",
+        log.error(" PROPERTY SERVICE CIRCUIT BREAKER ACTIVATED for property ID: {}. Reason: {}",
                 propertyId, ex.getMessage());
 
         PropertyServiceResponse fallbackProperty = new PropertyServiceResponse();
@@ -108,18 +105,18 @@ public class NotificationServiceImpl implements NotificationService {
 
             // Save to database
             notification = notificationRepository.save(notification);
-            log.info("💾 Notification saved with ID: {}", notification.getId());
+            log.info(" Notification saved with ID: {}", notification.getId());
 
             // Publish to RabbitMQ instead of sending email directly
-            log.info("📤 Publishing notification to RabbitMQ queue...");
+            log.info(" Publishing notification to RabbitMQ queue...");
             notificationProducer.sendNotification(request);
 
-            log.info("✅ Notification queued successfully for async processing");
+            log.info(" Notification queued successfully for async processing");
 
             return notificationMapper.toDto(notification);
 
         } catch (Exception e) {
-            log.error("❌ Failed to queue notification: {}", e.getMessage(), e);
+            log.error(" Failed to queue notification: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to queue notification", e);
         }
     }
@@ -129,7 +126,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public List<NotificationDto> notifyNewProperty(NotifyNewPropertyRequest request) {
-        log.info("🏠 Notifying users about new property ID: {}", request.getPropertyId());
+        log.info(" Notifying users about new property ID: {}", request.getPropertyId());
 
         List<NotificationDto> notifications = new ArrayList<>();
 
@@ -143,28 +140,28 @@ public class NotificationServiceImpl implements NotificationService {
             }
 
             PropertyDto property = mapToPropertyDto(propertyResponse);
-            log.info("✅ Property fetched: {}", property.getTitle());
+            log.info(" Property fetched: {}", property.getTitle());
 
             List<Long> userIds = request.getUserIds();
             if (userIds == null || userIds.isEmpty()) {
-                log.warn("⚠️ No specific users provided for property notification.");
+                log.warn("️ No specific users provided for property notification.");
                 return notifications;
             }
 
-            log.info("📤 Publishing property notifications to RabbitMQ for {} users", userIds.size());
+            log.info(" Publishing property notifications to RabbitMQ for {} users", userIds.size());
 
-            // ✅ FETCH USER DATA BEFORE SENDING TO RABBITMQ
+            //  FETCH USER DATA BEFORE SENDING TO RABBITMQ
             for (Long userId : userIds) {
                 try {
                     // Fetch user WITH JWT token (in REST request context)
                     UserDto user = userServiceClient.getUsersById(userId);
 
                     if (user == null || user.getEmail() == null) {
-                        log.error("❌ User not found or no email for user ID: {}", userId);
+                        log.error(" User not found or no email for user ID: {}", userId);
                         continue;
                     }
 
-                    log.info("👤 User found: {} <{}>", user.getUsername(), user.getEmail());
+                    log.info(" User found: {} <{}>", user.getUsername(), user.getEmail());
 
                     // Create notification record as PENDING
                     SendNotificationRequest notificationRequest = SendNotificationRequest.builder()
