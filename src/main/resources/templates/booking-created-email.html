@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Created</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .booking-card {
+            background: #f8f9fa;
+            border-left: 4px solid #11998e;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .detail-row {
+            display: flex;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+            min-width: 140px;
+        }
+        .detail-value {
+            color: #333;
+            flex: 1;
+        }
+        .price-box {
+            background: #e7f9f5;
+            border: 2px solid #11998e;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .price-total {
+            font-size: 24px;
+            font-weight: bold;
+            color: #11998e;
+            border-top: 2px solid #11998e;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        .property-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #11998e;
+            color: white;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #0f8676;
+        }
+        .button-view {
+            background: #6c757d;
+        }
+        .button-view:hover {
+            background: #5a6268;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        .success-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .alert-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎉 Booking Created Successfully!</h1>
+        <p>Your reservation is confirmed</p>
+        <div class="success-badge">✓ PENDING PAYMENT</div>
+    </div>
+
+    <div class="content">
+        <p>Dear <strong th:text="${userName}">User</strong>,</p>
+
+        <p>Congratulations! Your booking has been created successfully. Please complete the payment within <strong>7 days</strong> to secure your reservation.</p>
+
+        <div class="booking-card">
+            <h3 style="margin-top: 0; color: #11998e;">📋 Booking Details</h3>
+
+            <div class="detail-row">
+                <div class="detail-label">🆔 Booking ID:</div>
+                <div class="detail-value" th:text="${bookingId}">BKG-12345</div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">🏠 Property:</div>
+                <div class="detail-value">
+                    <strong th:text="${propertyTitle}">Modern 2BR Apartment</strong><br/>
+                    <small th:text="${propertyAddress}">123 Main Street, Amsterdam</small>
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">📅 Move-In Date:</div>
+                <div class="detail-value" th:text="${#temporals.format(moveInDate, 'EEEE, MMMM d, yyyy')}">
+                    February 1, 2025
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">📅 Move-Out Date:</div>
+                <div class="detail-value" th:text="${#temporals.format(moveOutDate, 'EEEE, MMMM d, yyyy')}">
+                    February 1, 2026
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">⏱️ Duration:</div>
+                <div class="detail-value" th:text="${durationMonths + ' months'}">12 months</div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">👤 Landlord:</div>
+                <div class="detail-value">
+                    <span th:text="${providerName}">John Doe</span><br/>
+                    <small th:text="${providerEmail}">landlord@example.com</small><br/>
+                    <small th:text="${providerPhone}" th:if="${providerPhone}">+31 6 1234 5678</small>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${propertyImageUrl}">
+            <img th:src="${propertyImageUrl}" alt="Property Image" class="property-image"/>
+        </div>
+
+        <div class="price-box">
+            <h3 style="margin-top: 0; color: #11998e;">💰 Payment Breakdown</h3>
+
+            <div class="price-row">
+                <span>Monthly Rent:</span>
+                <span>€<span th:text="${monthlyRent}">1500</span></span>
+            </div>
+
+            <div class="price-row">
+                <span>Duration (<span th:text="${durationMonths}">12</span> months):</span>
+                <span>€<span th:text="${totalRent}">18,000</span></span>
+            </div>
+
+            <div class="price-row">
+                <span>Security Deposit:</span>
+                <span>€<span th:text="${depositAmount}">1500</span></span>
+            </div>
+
+            <div class="price-row price-total">
+                <span>Total Amount:</span>
+                <span>€<span th:text="${totalAmount}">19,500</span></span>
+            </div>
+        </div>
+
+        <div class="alert-box">
+            <strong>⚠️ Payment Deadline:</strong>
+            <p style="margin: 10px 0;">Please complete payment by: <strong th:text="${#temporals.format(paymentDeadline, 'EEEE, MMMM d, yyyy')}">January 22, 2025</strong></p>
+            <p style="margin: 0;">Your booking will be automatically cancelled if payment is not received by this date.</p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${paymentUrl}" class="button">💳 Complete Payment Now</a>
+            <a th:href="${bookingUrl}" class="button button-view">📋 View Booking Details</a>
+        </div>
+
+        <div style="background: #e7f9f5; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <strong>📌 Next Steps:</strong>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+                <li>Complete the payment using the button above</li>
+                <li>Sign the rental agreement (will be sent after payment)</li>
+                <li>Coordinate move-in details with your landlord</li>
+                <li>Enjoy your new home! 🏠</li>
+            </ol>
+        </div>
+
+        <p>If you have any questions, please don't hesitate to contact us or your landlord.</p>
+
+        <p>Best regards,<br/>
+            <strong>Student Housing Team</strong></p>
+    </div>
+
+    <div class="footer">
+        <p>This is an automated email from Student Housing Management System</p>
+        <p>Booking ID: <span th:text="${bookingId}">BKG-12345</span></p>
+        <p>© 2025 Student Housing. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

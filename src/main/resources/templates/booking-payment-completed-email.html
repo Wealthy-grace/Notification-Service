@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmed</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .success-icon {
+            text-align: center;
+            font-size: 64px;
+            margin: 20px 0;
+        }
+        .success-badge {
+            background: #28a745;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .payment-card {
+            background: #f0f8ff;
+            border: 2px solid #667eea;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 12px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+            text-align: right;
+        }
+        .amount-paid {
+            font-size: 32px;
+            font-weight: bold;
+            color: #28a745;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 15px 35px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            font-weight: 600;
+        }
+        .button:hover {
+            background: #5568d3;
+        }
+        .button-download {
+            background: #28a745;
+        }
+        .button-download:hover {
+            background: #218838;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+            margin: 30px 0;
+        }
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+        .timeline-icon {
+            width: 40px;
+            height: 40px;
+            background: #28a745;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .timeline-icon.pending {
+            background: #6c757d;
+        }
+        .timeline-content {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="success-icon">✅</div>
+        <h1>Payment Successful!</h1>
+        <p>Your booking is now confirmed</p>
+        <div class="success-badge">FULLY PAID</div>
+    </div>
+
+    <div class="content">
+        <p>Dear <strong th:text="${userName}">User</strong>,</p>
+
+        <p>Great news! We've successfully received your payment. Your booking is now confirmed!</p>
+
+        <div class="amount-paid">
+            €<span th:text="${totalAmount}">19,500</span>
+        </div>
+        <p style="text-align: center; color: #666; margin-top: -10px;">Amount Paid</p>
+
+        <div class="payment-card">
+            <h3 style="margin-top: 0; color: #667eea;">💳 Payment Details</h3>
+
+            <div class="detail-row">
+                <div class="detail-label">Transaction ID:</div>
+                <div class="detail-value" th:text="${transactionId}">TXN-ABC123456</div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">Payment Date:</div>
+                <div class="detail-value" th:text="${#temporals.format(paymentDate, 'MMMM d, yyyy h:mm a')}">
+                    January 15, 2025 2:30 PM
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">Payment Method:</div>
+                <div class="detail-value" th:text="${paymentMethod}">Credit Card</div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">Booking ID:</div>
+                <div class="detail-value" th:text="${bookingId}">BKG-12345</div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-label">Property:</div>
+                <div class="detail-value" th:text="${propertyTitle}">Modern 2BR Apartment</div>
+            </div>
+
+            <div class="detail-row" style="border-bottom: 2px solid #667eea; padding-bottom: 15px;">
+                <div class="detail-label">Status:</div>
+                <div class="detail-value" style="color: #28a745; font-weight: bold;">✓ CONFIRMED</div>
+            </div>
+
+            <div class="detail-row" style="font-size: 18px; font-weight: bold;">
+                <div class="detail-label">Total Paid:</div>
+                <div class="detail-value" style="color: #28a745;">€<span th:text="${totalAmount}">19,500</span></div>
+            </div>
+        </div>
+
+        <div style="background: #e7f9f5; border-radius: 10px; padding: 20px; margin: 25px 0;">
+            <h3 style="color: #11998e; margin-top: 0;">📋 What Happens Next?</h3>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-icon">✓</div>
+                    <div class="timeline-content">
+                        <strong>Payment Confirmed</strong><br/>
+                        <small>Your payment has been processed successfully</small>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon pending">2</div>
+                    <div class="timeline-content">
+                        <strong>Contract Signing</strong><br/>
+                        <small>We'll send you the rental agreement within 24 hours</small>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon pending">3</div>
+                    <div class="timeline-content">
+                        <strong>Move-In Coordination</strong><br/>
+                        <small>Your landlord will contact you to arrange keys and move-in details</small>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon pending">4</div>
+                    <div class="timeline-content">
+                        <strong>Move-In Day!</strong><br/>
+                        <small th:text="${#temporals.format(moveInDate, 'MMMM d, yyyy')}">February 1, 2025</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${receiptUrl}" class="button button-download">📄 Download Receipt</a>
+            <a th:href="${bookingUrl}" class="button">📋 View Booking</a>
+        </div>
+
+        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <strong>📞 Need Help?</strong>
+            <p style="margin: 10px 0;">If you have any questions about your booking, please contact:</p>
+            <p style="margin: 5px 0;">
+                <strong th:text="${providerName}">John Doe</strong><br/>
+                <small th:text="${providerEmail}">landlord@example.com</small><br/>
+                <small th:text="${providerPhone}" th:if="${providerPhone}">+31 6 1234 5678</small>
+            </p>
+        </div>
+
+        <p>Thank you for choosing Student Housing! We wish you a wonderful stay at your new home.</p>
+
+        <p>Best regards,<br/>
+            <strong>Student Housing Team</strong></p>
+    </div>
+
+    <div class="footer">
+        <p>This is a payment confirmation from Student Housing Management System</p>
+        <p>Transaction ID: <span th:text="${transactionId}">TXN-ABC123456</span></p>
+        <p>Booking ID: <span th:text="${bookingId}">BKG-12345</span></p>
+        <p>© 2025 Student Housing. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

@@ -16,12 +16,14 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-///
-//  Email Service Implementation
-//  Handles email sending via Mailpit SMTP
-//  Mailpit Web UI: http://localhost:8025
-//
+/**
+ * Email Service Implementation
+ * Handles email sending via Mailpit SMTP
+ * Mailpit Web UI: http://localhost:8025
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -69,7 +71,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
         if (!emailEnabled) {
-            log.warn("Email sending is disabled. Skipping HTML email to: {}", to);
+            log.warn(" Email sending is disabled. Skipping HTML email to: {}", to);
             return;
         }
 
@@ -82,7 +84,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setFrom(fromEmail, fromName);
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(htmlContent, true);
+            helper.setText(htmlContent, true); //  CRITICAL: 'true' enables HTML rendering
 
             mailSender.send(message);
 
@@ -95,10 +97,62 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    /**
+     *  NEW METHOD: Send beautiful HTML email for confirmed appointments (SAGA)
+     * Uses appointment-confirmed-email.html template with full styling
+     */
+    @Override
+    public void sendAppointmentConfirmedEmail(
+            String toEmail,
+            String userName,
+            LocalDateTime appointmentDateTime,
+            Integer durationMinutes,
+            String propertyTitle,
+            String propertyAddress,
+            BigDecimal propertyPrice,
+            String propertyImageUrl,
+            String providerName,
+            String providerEmail,
+            String providerPhone,
+            String propertyUrl,
+            String appointmentUrl
+    ) {
+        log.info(" Sending appointment confirmed email to: {} (User: {})", toEmail, userName);
+
+        try {
+            Context context = new Context();
+            context.setVariable("userName", userName);
+            context.setVariable("appointmentDateTime", appointmentDateTime);
+            context.setVariable("durationMinutes", durationMinutes);
+            context.setVariable("propertyTitle", propertyTitle);
+            context.setVariable("propertyAddress", propertyAddress);
+            context.setVariable("propertyPrice", propertyPrice);
+            context.setVariable("propertyImageUrl", propertyImageUrl);
+            context.setVariable("providerName", providerName);
+            context.setVariable("providerEmail", providerEmail);
+            context.setVariable("providerPhone", providerPhone);
+            context.setVariable("propertyUrl", propertyUrl);
+            context.setVariable("appointmentUrl", appointmentUrl);
+
+            // Process the beautiful HTML template
+            String htmlContent = templateEngine.process("appointment-confirmed-email", context);
+
+            // Send HTML email
+            sendHtmlEmail(toEmail, " Your Property Viewing Appointment is Confirmed!", htmlContent);
+
+            log.info(" Appointment confirmed email sent successfully to: {}", toEmail);
+            log.info(" Check Mailpit UI at http://localhost:8025 to view the confirmation");
+
+        } catch (Exception e) {
+            log.error(" Failed to send appointment confirmed email to: {}. Error: {}", toEmail, e.getMessage(), e);
+            throw new RuntimeException("Failed to send appointment confirmed email", e);
+        }
+    }
+
     @Async("emailTaskExecutor")
     @Override
     public void sendNewPropertyNotification(String toEmail, String userName, PropertyDto property) {
-        log.info("Async: Sending new property notification to: {} for property: {}", toEmail, property.getTitle());
+        log.info(" Async: Sending new property notification to: {} for property: {}", toEmail, property.getTitle());
 
         try {
             // Create Thymeleaf context with property data
@@ -131,7 +185,7 @@ public class EmailServiceImpl implements EmailService {
                     htmlContent);
 
             log.info(" New property notification sent successfully to: {}", toEmail);
-            log.info(" Check Mailpit UI at http://localhost:8025 to view the notification");
+            log.info("Check Mailpit UI at http://localhost:8025 to view the notification");
 
         } catch (Exception e) {
             log.error(" Failed to send new property notification to: {}. Error: {}",
@@ -151,7 +205,7 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("dashboardUrl", "http://localhost:5173/dashboard");
 
             String htmlContent = templateEngine.process("welcome-email", context);
-            sendHtmlEmail(toEmail, "Welcome to Property Rental Platform! ", htmlContent);
+            sendHtmlEmail(toEmail, "Welcome to Property Rental Platform! 🎉", htmlContent);
 
             log.info(" Welcome email sent successfully to: {}", toEmail);
             log.info(" Check Mailpit UI at http://localhost:8025 to view the welcome email");
@@ -162,28 +216,28 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    @Override
-    public void sendAppointmentConfirmation(String toEmail, String userName, String appointmentDetails) {
-        log.info(" Sending appointment confirmation to: {} (User: {})", toEmail, userName);
-
-        try {
-            Context context = new Context();
-            context.setVariable("userName", userName);
-            context.setVariable("appointmentDetails", appointmentDetails);
-            context.setVariable("appointmentsUrl", "http://localhost:5173/appointments");
-
-            String htmlContent = templateEngine.process("appointment-confirmation", context);
-            sendHtmlEmail(toEmail, "Appointment Confirmed ", htmlContent);
-
-            log.info("Appointment confirmation sent successfully to: {}", toEmail);
-            log.info("Check Mailpit UI at http://localhost:8025 to view the confirmation");
-
-        } catch (Exception e) {
-            log.error(" Failed to send appointment confirmation to: {}. Error: {}",
-                    toEmail, e.getMessage(), e);
-            throw new RuntimeException("Failed to send appointment confirmation", e);
-        }
-    }
+//    @Override
+//    public void sendAppointmentConfirmation(String toEmail, String userName, String appointmentDetails) {
+//        log.info(" Sending appointment confirmation to: {} (User: {})", toEmail, userName);
+//
+//        try {
+//            Context context = new Context();
+//            context.setVariable("userName", userName);
+//            context.setVariable("appointmentDetails", appointmentDetails);
+//            context.setVariable("appointmentsUrl", "http://localhost:5173/appointments");
+//
+//            String htmlContent = templateEngine.process("appointment-confirmed-email", context);
+//            sendHtmlEmail(toEmail, "Appointment Confirmed ", htmlContent);
+//
+//            log.info(" Appointment confirmation sent successfully to: {}", toEmail);
+//            log.info(" Check Mailpit UI at http://localhost:8025 to view the confirmation");
+//
+//        } catch (Exception e) {
+//            log.error(" Failed to send appointment confirmation to: {}. Error: {}",
+//                    toEmail, e.getMessage(), e);
+//            throw new RuntimeException("Failed to send appointment confirmation", e);
+//        }
+//    }
 
     @Override
     public void sendMagicLinkEmail(String toEmail, String magicLink, String code) {
@@ -196,9 +250,9 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("expirationMinutes", 15);
 
             String htmlContent = templateEngine.process("magic-link-email", context);
-            sendHtmlEmail(toEmail, "Your Magic Link ", htmlContent);
+            sendHtmlEmail(toEmail, "Your Magic Link 🔗", htmlContent);
 
-            log.info(" Magic link email sent successfully to: {}", toEmail);
+            log.info("Magic link email sent successfully to: {}", toEmail);
             log.info(" Magic Link: {}", magicLink);
             log.info(" Verification Code: {}", code);
             log.info(" Check Mailpit UI at http://localhost:8025 to view the magic link email");
@@ -221,7 +275,7 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("expirationMinutes", 30);
 
             String htmlContent = templateEngine.process("password-reset-email", context);
-            sendHtmlEmail(toEmail, "Password Reset Request ", htmlContent);
+            sendHtmlEmail(toEmail, "Password Reset Request 🔐", htmlContent);
 
             log.info(" Password reset email sent successfully to: {}", toEmail);
             log.info(" Reset Link: {}", resetLink);
@@ -251,7 +305,7 @@ public class EmailServiceImpl implements EmailService {
             log.info(" Verification email sent successfully to: {}", toEmail);
             log.info(" Verification Link: {}", verificationLink);
             log.info(" Verification Code: {}", code);
-            log.info(" Check Mailpit UI at http://localhost:8025 to view the verification email");
+            log.info("Check Mailpit UI at http://localhost:8025 to view the verification email");
 
         } catch (Exception e) {
             log.error(" Failed to send verification email to: {}. Error: {}", toEmail, e.getMessage(), e);

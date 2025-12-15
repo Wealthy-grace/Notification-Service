@@ -1,154 +1,154 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Property Rental Platform</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            background: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 32px;
-        }
-        .content {
-            padding: 40px 30px;
-        }
-        .welcome-section {
-            text-align: center;
-            padding: 20px 0;
-        }
-        .welcome-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        .button {
-            display: inline-block;
-            padding: 14px 28px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .features {
-            margin: 30px 0;
-        }
-        .feature-item {
-            background: #f8f9fa;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border-left: 4px solid #667eea;
-        }
-        .feature-icon {
-            font-size: 24px;
-            margin-right: 10px;
-        }
-        .footer {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #6c757d;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="header">
-        <h1>🎉 Welcome!</h1>
-        <p style="font-size: 18px; margin: 10px 0 0 0;">We're excited to have you on board</p>
-    </div>
+<!--<!DOCTYPE html>-->
+<!--<html xmlns:th="http://www.thymeleaf.org">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Welcome to Property Rental Platform</title>-->
+<!--    <style>-->
+<!--        body {-->
+<!--            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;-->
+<!--            line-height: 1.6;-->
+<!--            color: #333;-->
+<!--            background-color: #f4f4f4;-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--        }-->
+<!--        .container {-->
+<!--            max-width: 600px;-->
+<!--            margin: 20px auto;-->
+<!--            background: #ffffff;-->
+<!--            border-radius: 8px;-->
+<!--            overflow: hidden;-->
+<!--            box-shadow: 0 2px 4px rgba(0,0,0,0.1);-->
+<!--        }-->
+<!--        .header {-->
+<!--            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);-->
+<!--            color: white;-->
+<!--            padding: 40px 30px;-->
+<!--            text-align: center;-->
+<!--        }-->
+<!--        .header h1 {-->
+<!--            margin: 0;-->
+<!--            font-size: 32px;-->
+<!--        }-->
+<!--        .content {-->
+<!--            padding: 40px 30px;-->
+<!--        }-->
+<!--        .welcome-section {-->
+<!--            text-align: center;-->
+<!--            padding: 20px 0;-->
+<!--        }-->
+<!--        .welcome-icon {-->
+<!--            font-size: 64px;-->
+<!--            margin-bottom: 20px;-->
+<!--        }-->
+<!--        .button {-->
+<!--            display: inline-block;-->
+<!--            padding: 14px 28px;-->
+<!--            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);-->
+<!--            color: white;-->
+<!--            text-decoration: none;-->
+<!--            border-radius: 5px;-->
+<!--            font-weight: bold;-->
+<!--            margin: 20px 0;-->
+<!--            text-align: center;-->
+<!--        }-->
+<!--        .features {-->
+<!--            margin: 30px 0;-->
+<!--        }-->
+<!--        .feature-item {-->
+<!--            background: #f8f9fa;-->
+<!--            padding: 15px;-->
+<!--            margin: 10px 0;-->
+<!--            border-radius: 5px;-->
+<!--            border-left: 4px solid #667eea;-->
+<!--        }-->
+<!--        .feature-icon {-->
+<!--            font-size: 24px;-->
+<!--            margin-right: 10px;-->
+<!--        }-->
+<!--        .footer {-->
+<!--            background: #f8f9fa;-->
+<!--            padding: 20px;-->
+<!--            text-align: center;-->
+<!--            font-size: 12px;-->
+<!--            color: #6c757d;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <div class="header">-->
+<!--        <h1>🎉 Welcome!</h1>-->
+<!--        <p style="font-size: 18px; margin: 10px 0 0 0;">We're excited to have you on board</p>-->
+<!--    </div>-->
 
-    <div class="content">
-        <div class="welcome-section">
-            <div class="welcome-icon">👋</div>
-            <h2>Hello <span th:text="${userName}">User</span>!</h2>
-            <p>Thank you for joining <strong th:text="${platformName}">Property Rental Platform</strong>. Your account has been successfully created!</p>
-        </div>
+<!--    <div class="content">-->
+<!--        <div class="welcome-section">-->
+<!--            <div class="welcome-icon">👋</div>-->
+<!--            <h2>Hello <span th:text="${userName}">User</span>!</h2>-->
+<!--            <p>Thank you for joining <strong th:text="${platformName}">Property Rental Platform</strong>. Your account has been successfully created!</p>-->
+<!--        </div>-->
 
-        <div class="features">
-            <h3>Here's what you can do:</h3>
+<!--        <div class="features">-->
+<!--            <h3>Here's what you can do:</h3>-->
 
-            <div class="feature-item">
-                <span class="feature-icon">🔍</span>
-                <strong>Search Properties</strong><br>
-                <span style="color: #666; font-size: 14px;">Browse thousands of rental properties in your preferred location</span>
-            </div>
+<!--            <div class="feature-item">-->
+<!--                <span class="feature-icon">🔍</span>-->
+<!--                <strong>Search Properties</strong><br>-->
+<!--                <span style="color: #666; font-size: 14px;">Browse thousands of rental properties in your preferred location</span>-->
+<!--            </div>-->
 
-            <div class="feature-item">
-                <span class="feature-icon">❤️</span>
-                <strong>Save Favorites</strong><br>
-                <span style="color: #666; font-size: 14px;">Create a wishlist of properties you love</span>
-            </div>
+<!--            <div class="feature-item">-->
+<!--                <span class="feature-icon">❤️</span>-->
+<!--                <strong>Save Favorites</strong><br>-->
+<!--                <span style="color: #666; font-size: 14px;">Create a wishlist of properties you love</span>-->
+<!--            </div>-->
 
-            <div class="feature-item">
-                <span class="feature-icon">📅</span>
-                <strong>Schedule Viewings</strong><br>
-                <span style="color: #666; font-size: 14px;">Book property viewings directly through our platform</span>
-            </div>
+<!--            <div class="feature-item">-->
+<!--                <span class="feature-icon">📅</span>-->
+<!--                <strong>Schedule Viewings</strong><br>-->
+<!--                <span style="color: #666; font-size: 14px;">Book property viewings directly through our platform</span>-->
+<!--            </div>-->
 
-            <div class="feature-item">
-                <span class="feature-icon">🔔</span>
-                <strong>Get Notifications</strong><br>
-                <span style="color: #666; font-size: 14px;">Receive instant alerts when new properties match your criteria</span>
-            </div>
-        </div>
+<!--            <div class="feature-item">-->
+<!--                <span class="feature-icon">🔔</span>-->
+<!--                <strong>Get Notifications</strong><br>-->
+<!--                <span style="color: #666; font-size: 14px;">Receive instant alerts when new properties match your criteria</span>-->
+<!--            </div>-->
+<!--        </div>-->
 
-        <div style="text-align: center; margin: 30px 0;">
-            <a th:href="${dashboardUrl}" class="button">
-                🚀 Go to Dashboard
-            </a>
-        </div>
+<!--        <div style="text-align: center; margin: 30px 0;">-->
+<!--            <a th:href="${dashboardUrl}" class="button">-->
+<!--                🚀 Go to Dashboard-->
+<!--            </a>-->
+<!--        </div>-->
 
-        <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px;">
-            <p style="margin: 0;"><strong>💡 Pro Tip:</strong></p>
-            <p style="margin: 10px 0 0 0; font-size: 14px;">
-                Complete your profile to help landlords understand your preferences better. Add your employment details, rental history, and preferences for the best experience!
-            </p>
-        </div>
+<!--        <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px;">-->
+<!--            <p style="margin: 0;"><strong>💡 Pro Tip:</strong></p>-->
+<!--            <p style="margin: 10px 0 0 0; font-size: 14px;">-->
+<!--                Complete your profile to help landlords understand your preferences better. Add your employment details, rental history, and preferences for the best experience!-->
+<!--            </p>-->
+<!--        </div>-->
 
-        <p style="margin-top: 30px; color: #6c757d; font-size: 14px; text-align: center;">
-            Need help? Check out our <a href="#" style="color: #667eea;">FAQ</a> or <a href="#" style="color: #667eea;">contact support</a>.
-        </p>
-    </div>
+<!--        <p style="margin-top: 30px; color: #6c757d; font-size: 14px; text-align: center;">-->
+<!--            Need help? Check out our <a href="#" style="color: #667eea;">FAQ</a> or <a href="#" style="color: #667eea;">contact support</a>.-->
+<!--        </p>-->
+<!--    </div>-->
 
-    <div class="footer">
-        <p>© 2025 Property Rental Platform. All rights reserved.</p>
-        <p>You're receiving this email because you created an account with us.</p>
-        <p style="margin-top: 10px;">
-            <a href="#" style="color: #667eea;">Help Center</a> |
-            <a href="#" style="color: #667eea;">Terms of Service</a> |
-            <a href="#" style="color: #667eea;">Privacy Policy</a>
-        </p>
-        <p style="margin-top: 10px;">
-            <strong>📧 Testing with Mailpit</strong><br>
-            View this email at: <a href="http://localhost:8025" style="color: #667eea;">http://localhost:8025</a>
-        </p>
-    </div>
-</div>
-</body>
-</html>
+<!--    <div class="footer">-->
+<!--        <p>© 2025 Property Rental Platform. All rights reserved.</p>-->
+<!--        <p>You're receiving this email because you created an account with us.</p>-->
+<!--        <p style="margin-top: 10px;">-->
+<!--            <a href="#" style="color: #667eea;">Help Center</a> |-->
+<!--            <a href="#" style="color: #667eea;">Terms of Service</a> |-->
+<!--            <a href="#" style="color: #667eea;">Privacy Policy</a>-->
+<!--        </p>-->
+<!--        <p style="margin-top: 10px;">-->
+<!--            <strong>📧 Testing with Mailpit</strong><br>-->
+<!--            View this email at: <a href="http://localhost:8025" style="color: #667eea;">http://localhost:8025</a>-->
+<!--        </p>-->
+<!--    </div>-->
+<!--</div>-->
+<!--</body>-->
+<!--</html>-->

@@ -44,7 +44,7 @@ public class NotificationProducer {
      */
     public void sendNotification(SendNotificationRequest request) {
         try {
-            log.info("📤 Publishing notification message for user: {} to RabbitMQ", request.getUserEmail());
+            log.info(" Publishing notification message for user: {} to RabbitMQ", request.getUserEmail());
 
             NotificationMessage message = NotificationMessage.builder()
                     .userId(request.getUserId())
@@ -71,10 +71,10 @@ public class NotificationProducer {
                     message
             );
 
-            log.info("✅ Notification message published successfully for user: {}", request.getUserEmail());
+            log.info(" Notification message published successfully for user: {}", request.getUserEmail());
 
         } catch (Exception e) {
-            log.error("❌ Failed to publish notification message: {}", e.getMessage(), e);
+            log.error("Failed to publish notification message: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to publish notification message", e);
         }
     }
@@ -84,7 +84,7 @@ public class NotificationProducer {
      */
     public void sendEmailNotification(String to, String subject, String body, String htmlContent) {
         try {
-            log.info("📧 Publishing email message to: {} via RabbitMQ", to);
+            log.info(" Publishing email message to: {} via RabbitMQ", to);
 
             NotificationMessage message = NotificationMessage.builder()
                     .userEmail(to)
@@ -103,10 +103,10 @@ public class NotificationProducer {
                     message
             );
 
-            log.info("✅ Email message published successfully to: {}", to);
+            log.info(" Email message published successfully to: {}", to);
 
         } catch (Exception e) {
-            log.error("❌ Failed to publish email message: {}", e.getMessage(), e);
+            log.error(" Failed to publish email message: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to publish email message", e);
         }
     }
@@ -119,7 +119,7 @@ public class NotificationProducer {
      */
     public void sendPropertyNotification(PropertyDto property, Long userId, UserDto user) {
         try {
-            log.info("🏠 Publishing property notification for property ID: {} to user: {}",
+            log.info(" Publishing property notification for property ID: {} to user: {}",
                     property.getId(), user.getEmail());
 
             NotificationMessage message = NotificationMessage.builder()
@@ -148,10 +148,10 @@ public class NotificationProducer {
                     message
             );
 
-            log.info("✅ Property notification message published for user: {}", user.getEmail());
+            log.info(" Property notification message published for user: {}", user.getEmail());
 
         } catch (Exception e) {
-            log.error("❌ Failed to publish property notification message: {}", e.getMessage(), e);
+            log.error(" Failed to publish property notification message: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to publish property notification message", e);
         }
     }
@@ -165,7 +165,7 @@ public class NotificationProducer {
                 return;
             }
 
-            log.info("🔄 Retrying notification (attempt {}/{})",
+            log.info(" Retrying notification (attempt {}/{})",
                     message.getRetryCount() + 1, message.getMaxRetries());
 
             message.setRetryCount(message.getRetryCount() + 1);

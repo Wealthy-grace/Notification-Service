@@ -50,12 +50,12 @@ public class NotificationServiceImpl implements NotificationService {
     @CircuitBreaker(name = "userService", fallbackMethod = "getUserByIdFallback")
     @Retry(name = "userService")
     public UserDto getUserWithCircuitBreaker(Long userId) {
-        log.debug("🔍 Calling User Service for user ID: {}", userId);
+        log.debug(" Calling User Service for user ID: {}", userId);
         return userServiceClient.getUserById(userId);
     }
 
     private UserDto getUserByIdFallback(Long userId, Exception ex) {
-        log.error("⚠️ USER SERVICE CIRCUIT BREAKER ACTIVATED for user ID: {}. Reason: {}",
+        log.error(" USER SERVICE CIRCUIT BREAKER ACTIVATED for user ID: {}. Reason: {}",
                 userId, ex.getMessage());
 
         UserDto fallbackUser = new UserDto();
@@ -87,7 +87,7 @@ public class NotificationServiceImpl implements NotificationService {
         fallbackProperty.setAddress("N/A");
         fallbackProperty.setRentAmount(BigDecimal.valueOf(0.0));
 
-        log.warn("🏠 Using FALLBACK property data for property ID: {}", propertyId);
+        log.warn(" Using FALLBACK property data for property ID: {}", propertyId);
         return fallbackProperty;
     }
 
@@ -96,7 +96,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public NotificationDto sendNotification(SendNotificationRequest request) {
-        log.info("📨 Creating notification for user: {} ({})", request.getUserName(), request.getUserEmail());
+        log.info(" Creating notification for user: {} ({})", request.getUserName(), request.getUserEmail());
 
         try {
             // Create notification entity
@@ -169,7 +169,7 @@ public class NotificationServiceImpl implements NotificationService {
                             .userEmail(user.getEmail())
                             .userName(user.getFirstName() + " " + user.getLastName())
                             .type(NotificationType.NEW_PROPERTY)
-                            .subject("🏠 New Property Available: " + property.getTitle())
+                            .subject(" New Property Available: " + property.getTitle())
                             .message(buildPropertyMessage(property))
                             .propertyId(property.getId())
                             .propertyTitle(property.getTitle())
@@ -183,14 +183,14 @@ public class NotificationServiceImpl implements NotificationService {
                     notification.setStatus(NotificationStatus.PENDING);
                     notification = notificationRepository.save(notification);
 
-                    // ✅ SEND TO RABBITMQ WITH USER DATA INCLUDED
+                    //  SEND TO RABBITMQ WITH USER DATA INCLUDED
                     notificationProducer.sendPropertyNotification(property, userId, user);
 
-                    log.info("✅ Notification queued for user: {} ({})", user.getUsername(), user.getEmail());
+                    log.info(" Notification queued for user: {} ({})", user.getUsername(), user.getEmail());
                     notifications.add(notificationMapper.toDto(notification));
 
                 } catch (Exception e) {
-                    log.error("❌ Failed to notify user ID {}: {}", userId, e.getMessage());
+                    log.error(" Failed to notify user ID {}: {}", userId, e.getMessage());
                 }
             }
 
@@ -198,7 +198,7 @@ public class NotificationServiceImpl implements NotificationService {
                     notifications.size(), property.getTitle());
 
         } catch (Exception e) {
-            log.error("❌ Failed to notify about new property: {}", e.getMessage(), e);
+            log.error(" Failed to notify about new property: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to notify about new property", e);
         }
 
@@ -207,7 +207,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public NotificationDto getNotificationById(Long id) {
-        log.info("🔍 Fetching notification with ID: {}", id);
+        log.info(" Fetching notification with ID: {}", id);
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with ID: " + id));
         return notificationMapper.toDto(notification);
@@ -216,7 +216,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public List<NotificationDto> getUserNotifications(Long userId) {
-        log.info("🔍 Fetching notifications for user ID: {}", userId);
+        log.info(" Fetching notifications for user ID: {}", userId);
         List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
         return notificationMapper.toDtoList(notifications);
     }
@@ -248,7 +248,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public List<NotificationDto> retryFailedNotifications() {
-        log.info("🔄 Retrying failed notifications via RabbitMQ");
+        log.info(" Retrying failed notifications via RabbitMQ");
 
         List<Notification> failedNotifications = notificationRepository.findPendingOrRetryable(3);
         List<NotificationDto> retriedNotifications = new ArrayList<>();
@@ -272,18 +272,18 @@ public class NotificationServiceImpl implements NotificationService {
                 notification.setStatus(NotificationStatus.RETRYING);
                 notification.setRetryCount(notification.getRetryCount() + 1);
 
-                log.info("✅ Notification ID {} re-queued for retry", notification.getId());
+                log.info(" Notification ID {} re-queued for retry", notification.getId());
             } catch (Exception e) {
                 notification.setStatus(NotificationStatus.FAILED);
                 notification.setErrorMessage(e.getMessage());
-                log.error("❌ Failed to retry notification ID: {}", notification.getId());
+                log.error(" Failed to retry notification ID: {}", notification.getId());
             }
 
             notification = notificationRepository.save(notification);
             retriedNotifications.add(notificationMapper.toDto(notification));
         }
 
-        log.info("🎉 Re-queued {} notifications for retry", retriedNotifications.size());
+        log.info(" Re-queued {} notifications for retry", retriedNotifications.size());
         return retriedNotifications;
     }
 
@@ -303,18 +303,18 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void deleteNotification(Long id) {
-        log.info("🗑️ Deleting notification with ID: {}", id);
+        log.info("🗑 Deleting notification with ID: {}", id);
         if (!notificationRepository.existsById(id)) {
             throw new ResourceNotFoundException("Notification not found with ID: " + id);
         }
         notificationRepository.deleteById(id);
-        log.info("✅ Notification deleted successfully");
+        log.info(" Notification deleted successfully");
     }
 
     @Override
     @Transactional(readOnly = true)
     public NotificationStatistics getStatistics() {
-        log.info("📊 Calculating notification statistics");
+        log.info(" Calculating notification statistics");
 
         return NotificationStatistics.builder()
                 .totalNotifications(notificationRepository.count())
@@ -328,13 +328,13 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public PropertyServiceResponse updatePropertyIsRented(Long propertyId, Boolean isRented) {
-        log.info("🔄 Updating property rental status for property ID: {} to {}", propertyId, isRented);
+        log.info(" Updating property rental status for property ID: {} to {}", propertyId, isRented);
 
         try {
             PropertyServiceResponse existingProperty = propertyServiceClient.getPropertyById(propertyId);
 
             if (existingProperty == null || existingProperty.getPropertyId() == null) {
-                log.error("❌ Property not found with ID: {}", propertyId);
+                log.error(" Property not found with ID: {}", propertyId);
                 throw new ResourceNotFoundException("Property not found with ID: " + propertyId);
             }
 
@@ -344,11 +344,11 @@ public class NotificationServiceImpl implements NotificationService {
 
             PropertyServiceResponse updatedResponse = propertyServiceClient.updateProperty(propertyId, patchRequest);
 
-            log.info("✅ Property rental status updated successfully for property ID: {}", propertyId);
+            log.info(" Property rental status updated successfully for property ID: {}", propertyId);
             return updatedResponse;
 
         } catch (Exception e) {
-            log.error("❌ Error updating property rental status: {}", e.getMessage(), e);
+            log.error(" Error updating property rental status: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to update property rental status: " + e.getMessage(), e);
         }
     }
@@ -382,6 +382,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         return message.toString();
     }
+
+
 
     private String getPropertyImageUrl(PropertyDto property, int index) {
         if (property.getImages() != null &&

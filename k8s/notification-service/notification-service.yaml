@@ -21,7 +21,8 @@ data:
 
   # Keycloak OAuth2 Resource Server
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://localhost:8080/realms/friendly-housing"
-  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak:8080/realms/friendly-housing/protocol/openid-connect/certs"
+  #SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak:8080/realms/friendly-housing/protocol/openid-connect/certs"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak.student-housing.svc.cluster.local:8080/realms/friendly-housing/protocol/openid-connect/certs"
 
   # Keycloak OAuth2 Client Configuration
   SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: "notification-service"
@@ -32,7 +33,8 @@ data:
   SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_NAME_ATTRIBUTE: "preferred_username"
 
   # Keycloak Admin Configuration
-  KEYCLOAK_AUTH_SERVER_URL: "http://keycloak:8080"
+#  KEYCLOAK_AUTH_SERVER_URL: "http://keycloak:8080"
+  KEYCLOAK_AUTH_SERVER_URL: "http://keycloak.student-housing.svc.cluster.local:8080"
   KEYCLOAK_REALM: "friendly-housing"
   KEYCLOAK_RESOURCE: "notification-service"
 
@@ -123,8 +125,8 @@ metadata:
 type: Opaque
 stringData:
   SPRING_DATASOURCE_PASSWORD: "Server123@"
-  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: "5JE9xG0ZS7UEGN06a3QljS0t3I0DcOn6"
-  KEYCLOAK_CREDENTIALS_SECRET: "Lrf6ZwUcAqOnvg4fl89kKyiOLCaWDb6B"
+  SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: "lYGeoUouDzxT0eciwsOvjqUWPV1H5Acg"
+  KEYCLOAK_CREDENTIALS_SECRET: "lYGeoUouDzxT0eciwsOvjqUWPV1H5Acg"
 
 ---
 apiVersion: v1

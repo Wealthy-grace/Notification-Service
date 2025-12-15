@@ -291,7 +291,7 @@ public class NotificationController {
     }
 
     /**
-     * 🧪 Test: Send property notification (No Auth Required)
+     *  Test: Send property notification (No Auth Required)
      * GET /api/notifications/test/property?email=test@example.com&name=John
      */
     @GetMapping("/test/property")
@@ -300,7 +300,7 @@ public class NotificationController {
             @RequestParam(defaultValue = "test@example.com") String email,
             @RequestParam(defaultValue = "Test User") String name) {
 
-        log.info("🧪 TEST: Sending property notification to: {} (Name: {})", email, name);
+        log.info(" TEST: Sending property notification to: {} (Name: {})", email, name);
 
         try {
             // Create test property
@@ -394,5 +394,54 @@ public class NotificationController {
             return property.getImages().get(index);
         }
         return null;
+    }
+
+
+    /**
+     *Test: Send appointment confirmed email (No Auth Required)
+     * GET /api/notifications/test/appointment-confirmed?email=test@example.com&name=John
+     */
+    @GetMapping("/test/appointment-confirmed")
+    @Operation(summary = "TEST: Send appointment confirmed email", description = "Testing endpoint - No auth required")
+    public ResponseEntity<Map<String, String>> testAppointmentConfirmedEmail(
+            @RequestParam(defaultValue = "emma.anderson@student.uva.nl") String email,
+            @RequestParam(defaultValue = "Emma Anderson") String name) {
+
+        log.info(" TEST: Sending appointment confirmed email to: {} (Name: {})", email, name);
+
+        try {
+            emailService.sendAppointmentConfirmedEmail(
+                    email,
+                    name,
+                    java.time.LocalDateTime.of(2025, 12, 16, 14, 30),  // December 16, 2025 at 2:30 PM
+                    60,  // 60 minutes
+                    "Modern Studio in Amsterdam",
+                    "Nieuwezijds Voorburgwal 147, 1012 RJ Amsterdam",
+                    new BigDecimal("1350.00"),
+                    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600",
+                    "John Property Manager",
+                    "john.manager@student.housing.nl",
+                    "+31 6 1234 5678",
+                    "http://localhost:5173/property/3",
+                    "http://localhost:5173/appointments/123"
+            );
+
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Appointment confirmed email sent successfully");
+            response.put("recipient", email);
+            response.put("userName", name);
+            response.put("mailpit_ui", "http://localhost:8025");
+            response.put("note", "Check Mailpit UI - Look for HTML tab or Headers tab to view the beautiful styled email!");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error(" Failed to send appointment confirmed email: {}", e.getMessage(), e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Failed to send appointment confirmed email");
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
     }
 }
